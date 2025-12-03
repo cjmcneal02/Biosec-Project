@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { Threat, ThreatInput } from "@/types/Threat";
 import { generateCompleteAIAnalysis } from "@/services/fakeAI";
+import { SAMPLE_THREATS, isSeeded, markAsSeeded } from "@/services/seedData";
 
 interface ThreatContextType {
   threats: Threat[];
@@ -12,6 +13,8 @@ interface ThreatContextType {
   deleteThreat: (id: string) => void;
   getThreatById: (id: string) => Threat | undefined;
   refreshAI: (id: string) => Promise<void>;
+  loadSampleData: () => void;
+  clearAllData: () => void;
 }
 
 const ThreatContext = createContext<ThreatContextType | undefined>(undefined);
@@ -20,12 +23,21 @@ const STORAGE_KEY = "biosec_threats";
 
 /**
  * Load threats from localStorage
+ * Auto-seeds with sample data on first load
  */
 function loadThreatsFromStorage(): Threat[] {
   if (typeof window === "undefined") return [];
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
+
+    // If no threats exist and app hasn't been seeded, load sample data
+    if (!stored && !isSeeded()) {
+      markAsSeeded();
+      saveThreatsToStorage(SAMPLE_THREATS);
+      return SAMPLE_THREATS;
+    }
+
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
     console.error("Failed to load threats from localStorage:", error);
@@ -135,6 +147,21 @@ export function ThreatProvider({ children }: { children: React.ReactNode }) {
     updateThreat(id, { ai: newAI });
   };
 
+  /**
+   * Load sample threat data
+   */
+  const loadSampleData = () => {
+    setThreats(SAMPLE_THREATS);
+    markAsSeeded();
+  };
+
+  /**
+   * Clear all threat data
+   */
+  const clearAllData = () => {
+    setThreats([]);
+  };
+
   const value: ThreatContextType = {
     threats,
     isLoading,
@@ -143,6 +170,8 @@ export function ThreatProvider({ children }: { children: React.ReactNode }) {
     deleteThreat,
     getThreatById,
     refreshAI,
+    loadSampleData,
+    clearAllData,
   };
 
   return (

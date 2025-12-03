@@ -8,7 +8,7 @@ import ThreatCard from "@/components/ThreatCard";
 import Link from "next/link";
 
 export default function Home() {
-  const { threats, isLoading } = useThreats();
+  const { threats, isLoading, loadSampleData } = useThreats();
   const insights = generateGlobalInsights(threats);
 
   if (isLoading) {
@@ -50,13 +50,21 @@ export default function Home() {
 
           {recentThreats.length === 0 ? (
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-12 text-center">
-              <p className="text-gray-400 mb-4">No threats reported yet</p>
-              <Link
-                href="/threats/new"
-                className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Report First Threat
-              </Link>
+              <p className="text-gray-400 mb-6">No threats reported yet</p>
+              <div className="flex gap-4 justify-center">
+                <Link
+                  href="/threats/new"
+                  className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  Report First Threat
+                </Link>
+                <button
+                  onClick={loadSampleData}
+                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  Load Sample Data
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

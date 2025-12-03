@@ -4,9 +4,10 @@ import { useThreats } from "@/state/ThreatContext";
 import { generateGlobalInsights, getRiskColor } from "@/services/insights";
 import DashboardLayout from "@/components/DashboardLayout";
 import InsightsPanel from "@/components/InsightsPanel";
+import ThreatTrendChart from "@/components/ThreatTrendChart";
 
 export default function InsightsPage() {
-  const { threats, isLoading } = useThreats();
+  const { threats, isLoading, loadSampleData } = useThreats();
   const insights = generateGlobalInsights(threats);
 
   if (isLoading) {
@@ -40,14 +41,23 @@ export default function InsightsPage() {
 
         {threats.length === 0 ? (
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-12 text-center">
-            <p className="text-gray-400 mb-4">
+            <p className="text-gray-400 mb-6">
               No data available. Report threats to see insights.
             </p>
+            <button
+              onClick={loadSampleData}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              Load Sample Data
+            </button>
           </div>
         ) : (
           <>
             {/* Main Insights Panel */}
             <InsightsPanel insights={insights} />
+
+            {/* Trend Charts */}
+            <ThreatTrendChart threats={threats} />
 
             {/* Category Breakdown */}
             <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">

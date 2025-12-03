@@ -11,6 +11,7 @@ export default function ThreatsPage() {
   const { threats, isLoading } = useThreats();
   const [sortBy, setSortBy] = useState<"date" | "risk">("date");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const categories: ThreatCategory[] = [
     "Biotech Malware",
@@ -22,6 +23,17 @@ export default function ThreatsPage() {
 
   const filteredAndSortedThreats = useMemo(() => {
     let result = [...threats];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (t) =>
+          t.title.toLowerCase().includes(query) ||
+          t.description.toLowerCase().includes(query) ||
+          t.source.toLowerCase().includes(query)
+      );
+    }
 
     // Filter by category
     if (filterCategory !== "all") {
@@ -38,7 +50,7 @@ export default function ThreatsPage() {
     });
 
     return result;
-  }, [threats, sortBy, filterCategory]);
+  }, [threats, sortBy, filterCategory, searchQuery]);
 
   if (isLoading) {
     return (
@@ -57,7 +69,16 @@ export default function ThreatsPage() {
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">All Threats</h1>
             <p className="text-gray-400">
-              {threats.length} total threat{threats.length !== 1 ? "s" : ""} reported
+              {searchQuery || filterCategory !== "all" ? (
+                <>
+                  Showing {filteredAndSortedThreats.length} of {threats.length} threat
+                  {threats.length !== 1 ? "s" : ""}
+                </>
+              ) : (
+                <>
+                  {threats.length} total threat{threats.length !== 1 ? "s" : ""} reported
+                </>
+              )}
             </p>
           </div>
           <Link
@@ -68,34 +89,88 @@ export default function ThreatsPage() {
           </Link>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-4 bg-gray-900 border border-gray-800 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-400">Sort by:</label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "date" | "risk")}
-              className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search threats by title, description, or source..."
+              className="w-full bg-gray-900 border border-gray-800 text-white rounded-lg px-4 py-3 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <svg
+              className="absolute left-3 top-3.5 h-5 w-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <option value="date">Date</option>
-              <option value="risk">Risk Score</option>
-            </select>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-3 text-gray-400 hover:text-white"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-400">Category:</label>
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+          {/* Filters */}
+          <div className="flex items-center gap-4 bg-gray-900 border border-gray-800 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-400">Sort by:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "date" | "risk")}
+                className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="date">Date</option>
+                <option value="risk">Risk Score</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-400">Category:</label>
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="bg-gray-800 border border-gray-700 text-white rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {(searchQuery || filterCategory !== "all") && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setFilterCategory("all");
+                }}
+                className="ml-auto text-sm text-blue-400 hover:text-blue-300"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -103,16 +178,20 @@ export default function ThreatsPage() {
         {filteredAndSortedThreats.length === 0 ? (
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-12 text-center">
             <p className="text-gray-400 mb-4">
-              {filterCategory !== "all"
+              {searchQuery
+                ? `No threats found matching "${searchQuery}"`
+                : filterCategory !== "all"
                 ? "No threats found in this category"
                 : "No threats reported yet"}
             </p>
-            <Link
-              href="/threats/new"
-              className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-            >
-              Report First Threat
-            </Link>
+            {!searchQuery && filterCategory === "all" && (
+              <Link
+                href="/threats/new"
+                className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Report First Threat
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
