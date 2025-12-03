@@ -92,13 +92,23 @@ biosec-project/
 │   ├── DashboardLayout.tsx       # Main layout wrapper
 │   ├── Sidebar.tsx               # Navigation sidebar
 │   ├── ThreatCard.tsx            # Threat preview card
-│   ├── ThreatForm.tsx            # Threat submission form
+│   ├── ThreatForm.tsx             # Threat submission form
 │   ├── RiskBadge.tsx             # Risk score indicator
-│   └── InsightsPanel.tsx         # Analytics panel
+│   ├── InsightsPanel.tsx         # Analytics panel
+│   └── ThreatTrendChart.tsx     # Threat trend visualization
+│
+├── scripts/                      # Vanilla JavaScript files
+│   ├── components.js             # Component rendering functions
+│   ├── main.js                   # Main dashboard logic
+│   └── mockData.js               # Dummy data and utilities
+│
+├── styles/                       # Custom CSS styles
+│   └── main.css                  # Main stylesheet
 │
 ├── services/                     # Business logic & utilities
 │   ├── fakeAI.ts                 # Mock AI analysis generator
-│   └── insights.ts               # Analytics calculations
+│   ├── insights.ts               # Analytics calculations
+│   └── seedData.ts               # Seed data utilities
 │
 ├── state/                        # State management
 │   └── ThreatContext.tsx         # React Context for threats
@@ -106,7 +116,13 @@ biosec-project/
 ├── types/                        # TypeScript type definitions
 │   └── Threat.ts                 # Core data models
 │
-└── package.json                  # Dependencies & scripts
+├── index.html                    # Vanilla HTML entry point
+├── next.config.ts                # Next.js configuration
+├── tailwind.config.ts            # TailwindCSS configuration
+├── tsconfig.json                 # TypeScript configuration
+├── postcss.config.mjs            # PostCSS configuration
+├── package.json                  # Dependencies & scripts
+└── claude.md                     # Project guidelines
 ```
 
 ## Usage Guide
