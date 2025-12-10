@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThreatProvider } from '@/state/ThreatContext';
+import { ThemeProvider } from '@/state/ThemeContext';
 
 export const metadata: Metadata = {
   title: 'BioSec Threat Intelligence Dashboard',
@@ -13,11 +14,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <ThreatProvider>
-          {children}
-        </ThreatProvider>
+        <ThemeProvider>
+          <ThreatProvider>
+            {children}
+          </ThreatProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

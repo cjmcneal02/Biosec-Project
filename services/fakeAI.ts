@@ -5,6 +5,10 @@ import type {
   AILayer3,
   ThreatInput,
 } from "@/types/Threat";
+import {
+  analyzeThreatWithAI,
+  generateStepsWithAI,
+} from "./openAIClient";
 
 // Helper to pick random item from array
 function pickRandom<T>(arr: T[]): T {
@@ -22,10 +26,10 @@ async function simulateProcessing(ms: number = 800): Promise<void> {
 }
 
 /**
- * Mock AI Layer 1: Initial Threat Assessment
+ * Mock AI Layer 1: Initial Threat Assessment (Fallback)
  * Analyzes threat and provides risk score, category, and summary
  */
-export async function generateAILayer1(
+async function generateAILayer1Mock(
   threat: ThreatInput
 ): Promise<AILayer1> {
   await simulateProcessing();
@@ -58,10 +62,19 @@ export async function generateAILayer1(
 }
 
 /**
- * Mock AI Layer 2: Mitigation Recommendations
+ * AI Layer 1: Initial Threat Assessment (Real AI with fallback)
+ */
+export async function generateAILayer1(
+  threat: ThreatInput
+): Promise<AILayer1> {
+  return analyzeThreatWithAI(threat, () => generateAILayer1Mock(threat));
+}
+
+/**
+ * Mock AI Layer 2: Mitigation Recommendations (Fallback)
  * Provides actionable steps and priority level
  */
-export async function generateAILayer2(
+async function generateAILayer2Mock(
   threat: ThreatInput,
   layer1: AILayer1
 ): Promise<AILayer2> {
@@ -129,6 +142,20 @@ export async function generateAILayer2(
     recommendedActions: actions,
     timestamp: new Date().toISOString(),
   };
+}
+
+/**
+ * AI Layer 2: Mitigation Recommendations (Real AI with fallback)
+ */
+export async function generateAILayer2(
+  threat: ThreatInput,
+  layer1: AILayer1
+): Promise<AILayer2> {
+  return generateStepsWithAI(
+    threat,
+    layer1,
+    () => generateAILayer2Mock(threat, layer1)
+  );
 }
 
 /**

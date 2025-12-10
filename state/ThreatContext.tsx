@@ -1,18 +1,24 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import type { Threat, ThreatInput } from "@/types/Threat";
-import { generateCompleteAIAnalysis } from "@/services/fakeAI";
+import type { Threat, ThreatInput, AILayer2 } from "@/types/Threat";
+import { generateCompleteAIAnalysis, generateAILayer2 } from "@/services/fakeAI";
 import { SAMPLE_THREATS, isSeeded, markAsSeeded } from "@/services/seedData";
+import { generateThreatsWithAI } from "@/services/threatGenerator";
+import { createPlaceholderThreat, isThreatAnalyzed } from "@/services/threatPlaceholder";
 
 interface ThreatContextType {
   threats: Threat[];
   isLoading: boolean;
+  isGeneratingThreats: boolean;
   addThreat: (input: ThreatInput) => Promise<Threat>;
   updateThreat: (id: string, updates: Partial<Threat>) => void;
   deleteThreat: (id: string) => void;
   getThreatById: (id: string) => Threat | undefined;
   refreshAI: (id: string) => Promise<void>;
+  generateActionableSteps: (id: string) => Promise<AILayer2>;
+  generateNewThreats: (count?: number, replace?: boolean) => Promise<void>;
+  analyzeThreat: (id: string) => Promise<void>;
   loadSampleData: () => void;
   clearAllData: () => void;
 }
@@ -68,6 +74,7 @@ function generateId(): string {
 export function ThreatProvider({ children }: { children: React.ReactNode }) {
   const [threats, setThreats] = useState<Threat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingThreats, setIsGeneratingThreats] = useState(false);
 
   // Load threats on mount
   useEffect(() => {
@@ -148,6 +155,33 @@ export function ThreatProvider({ children }: { children: React.ReactNode }) {
   };
 
   /**
+   * Generate actionable steps for a threat
+   */
+  const generateActionableSteps = async (id: string): Promise<AILayer2> => {
+    const threat = getThreatById(id);
+    if (!threat) {
+      throw new Error("Threat not found");
+    }
+
+    const input: ThreatInput = {
+      title: threat.title,
+      description: threat.description,
+      date: threat.date,
+      source: threat.source,
+    };
+
+    const newLayer2 = await generateAILayer2(input, threat.ai.layer1);
+    updateThreat(id, {
+      ai: {
+        ...threat.ai,
+        layer2: newLayer2,
+      },
+    });
+
+    return newLayer2;
+  };
+
+  /**
    * Load sample threat data
    */
   const loadSampleData = () => {
@@ -162,14 +196,74 @@ export function ThreatProvider({ children }: { children: React.ReactNode }) {
     setThreats([]);
   };
 
+  /**
+   * Generate new threats WITHOUT AI analysis (creates placeholders)
+   */
+  const generateNewThreats = async (count: number = 25, replace: boolean = true) => {
+    setIsGeneratingThreats(true);
+    
+    try {
+      // Clear existing threats if replacing
+      if (replace) {
+        setThreats([]);
+      }
+      
+      // Generate threat templates using AI (or fallback) - NO ANALYSIS
+      const threatTemplates = await generateThreatsWithAI(count);
+      
+      // Create placeholder threats (no AI analysis to save costs)
+      const newThreats: Threat[] = threatTemplates.map((template) => 
+        createPlaceholderThreat(template, generateId())
+      );
+      
+      // Update state
+      if (replace) {
+        setThreats(newThreats);
+      } else {
+        setThreats((prev) => [...prev, ...newThreats]);
+      }
+      
+      markAsSeeded();
+    } catch (error) {
+      console.error("Failed to generate new threats:", error);
+      throw error;
+    } finally {
+      setIsGeneratingThreats(false);
+    }
+  };
+
+  /**
+   * Analyze a single threat (generates full AI analysis)
+   */
+  const analyzeThreat = async (id: string) => {
+    const threat = getThreatById(id);
+    if (!threat) {
+      throw new Error("Threat not found");
+    }
+
+    const input: ThreatInput = {
+      title: threat.title,
+      description: threat.description,
+      date: threat.date,
+      source: threat.source,
+    };
+
+    const aiAnalysis = await generateCompleteAIAnalysis(input);
+    updateThreat(id, { ai: aiAnalysis });
+  };
+
   const value: ThreatContextType = {
     threats,
     isLoading,
+    isGeneratingThreats,
     addThreat,
     updateThreat,
     deleteThreat,
     getThreatById,
     refreshAI,
+    generateActionableSteps,
+    generateNewThreats,
+    analyzeThreat,
     loadSampleData,
     clearAllData,
   };

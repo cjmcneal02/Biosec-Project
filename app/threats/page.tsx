@@ -8,10 +8,38 @@ import Link from "next/link";
 import type { ThreatCategory } from "@/types/Threat";
 
 export default function ThreatsPage() {
-  const { threats, isLoading } = useThreats();
+  const { threats, isLoading, generateNewThreats, isGeneratingThreats } = useThreats();
   const [sortBy, setSortBy] = useState<"date" | "risk">("date");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const handleGenerateNewThreats = async () => {
+    const wantsToAdd = confirm(
+      "Generate 25 new AI threats?\n\n" +
+      "OK = ADD 25 threats (keeps your existing " + threats.length + " threats = " + (threats.length + 25) + " total)\n" +
+      "Cancel = REPLACE all threats with 25 new ones (deletes existing " + threats.length + " threats)"
+    );
+    
+    if (wantsToAdd) {
+      // They clicked OK - add new threats
+      try {
+        await generateNewThreats(25, false); // false = don't replace, add
+      } catch (error) {
+        console.error("Failed to generate threats:", error);
+        alert("Failed to generate new threats. Please try again.");
+      }
+    } else {
+      // They clicked Cancel - they want to replace, ask for confirmation
+      if (confirm("⚠️ WARNING: This will DELETE all " + threats.length + " existing threats and replace with 25 new ones. Continue?")) {
+        try {
+          await generateNewThreats(25, true); // true = replace
+        } catch (error) {
+          console.error("Failed to generate threats:", error);
+          alert("Failed to generate new threats. Please try again.");
+        }
+      }
+    }
+  };
 
   const categories: ThreatCategory[] = [
     "Biotech Malware",
@@ -81,12 +109,33 @@ export default function ThreatsPage() {
               )}
             </p>
           </div>
-          <Link
-            href="/threats/new"
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-          >
-            + Report Threat
-          </Link>
+          <div className="flex items-center gap-3">
+            {threats.length > 0 && (
+              <button
+                onClick={handleGenerateNewThreats}
+                disabled={isGeneratingThreats}
+                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                {isGeneratingThreats ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <span>✨</span>
+                    Generate 25 New Threats
+                  </>
+                )}
+              </button>
+            )}
+            <Link
+              href="/threats/new"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              + Report Threat
+            </Link>
+          </div>
         </div>
 
         {/* Search and Filters */}

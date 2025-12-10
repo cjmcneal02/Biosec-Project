@@ -1,4 +1,6 @@
 import type { Threat, GlobalInsights, ThreatCategory } from "@/types/Threat";
+import { getDashboardRecommendation } from "./openAIClient";
+import { isThreatAnalyzed } from "./threatPlaceholder";
 
 /**
  * Calculate global insights from all threats
@@ -24,14 +26,19 @@ export function generateGlobalInsights(threats: Threat[]): GlobalInsights {
     };
   }
 
-  // Calculate average risk
-  const avgRisk =
-    threats.reduce((sum, threat) => sum + threat.ai.layer1.risk, 0) /
-    threats.length;
+  // Filter to only analyzed threats for risk calculations
+  const analyzedThreats = threats.filter(isThreatAnalyzed);
 
-  // Find top category
+  // Calculate average risk (only from analyzed threats)
+  const avgRisk =
+    analyzedThreats.length > 0
+      ? analyzedThreats.reduce((sum, threat) => sum + threat.ai.layer1.risk, 0) /
+        analyzedThreats.length
+      : 0;
+
+  // Find top category (only from analyzed threats)
   const categoryCounts: Record<string, number> = {};
-  threats.forEach((threat) => {
+  analyzedThreats.forEach((threat) => {
     const cat = threat.ai.layer1.category;
     categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
   });
@@ -48,7 +55,7 @@ export function generateGlobalInsights(threats: Threat[]): GlobalInsights {
     critical: 0,
   };
 
-  threats.forEach((threat) => {
+  analyzedThreats.forEach((threat) => {
     const risk = threat.ai.layer1.risk;
     if (risk <= 25) riskDistribution.low++;
     else if (risk <= 50) riskDistribution.medium++;
@@ -120,4 +127,30 @@ export function getRiskBgColor(score: number): string {
   if (score <= 50) return "bg-yellow-500/20 border-yellow-500";
   if (score <= 75) return "bg-orange-500/20 border-orange-500";
   return "bg-red-500/20 border-red-500";
+}
+
+/**
+ * Get AI-powered dashboard recommendation (with mock fallback)
+ */
+export async function getAIRecommendation(
+  threats: Threat[],
+  insights: GlobalInsights
+): Promise<string> {
+  const mockFallback = (): Promise<{ recommendation: string }> => {
+    return Promise.resolve({
+      recommendation: insights.trendingPattern || "Continue monitoring threats and prioritize high-risk items for immediate review.",
+    });
+  };
+
+  try {
+    const result = await getDashboardRecommendation(
+      threats,
+      insights,
+      mockFallback
+    );
+    return result.recommendation;
+  } catch (error) {
+    console.error("Failed to get AI recommendation:", error);
+    return insights.trendingPattern || "Continue monitoring threats and prioritize high-risk items for immediate review.";
+  }
 }
